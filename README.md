@@ -1,0 +1,2 @@
+# TrackSpend
+TrackSpend is a simple Blazor server application using [MudBlazor](https://mudblazor.com/) and the [MVVM design pattern](https://learn.microsoft.com/en-us/dotnet/architecture/maui/mvvm) with [dotnet Community Toolkit](https://github.com/CommunityToolkit/dotnet).
