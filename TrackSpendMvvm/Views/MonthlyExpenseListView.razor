@@ -1,0 +1,65 @@
+﻿@inherits BaseView<MonthlyExpenseListViewModel>
+
+<MudContainer>
+	@if (ViewModel.Items is null)
+	{
+		<MudText>BARF BARF LOADING LOADING WHAT?</MudText>
+	}
+	else
+	{
+		@foreach (var monthlyExpense in @ViewModel.Items)
+		{
+			<MudGrid>
+				<MudItem xs="12">
+					<MudTextField T="string"
+					              @bind-Value="@monthlyExpense.Title"
+					              Label="Expense Title"
+					              Margin="Margin.Dense"
+					              Variant="Variant.Outlined"/>
+				</MudItem>
+				<MudItem xs="12">
+					<MudTextField T="string"
+					              @bind-Value="@monthlyExpense.Description"
+					              Label="Expense description"
+					              Variant="Variant.Outlined"
+					              Lines="4"/>
+
+				</MudItem>
+				<MudItem xs="4">
+					<MudNumericField @bind-Value="@monthlyExpense.Amount"
+					                 Adornment="Adornment.Start"
+					                 AdornmentIcon="@Icons.Material.Filled.AttachMoney"
+					                 Format="N2"
+					                 Label="Amount"
+					                 HideSpinButtons="true"
+					                 Margin="Margin.Dense"
+					                 Min="0.0M"
+					                 Variant="Variant.Outlined"/>
+				</MudItem>
+				<MudItem xs="4">
+					<MudNumericField @bind-Value="@monthlyExpense.DayOfMonth"
+					                 Label="Day of Month"
+					                 Margin="Margin.Dense"
+					                 Max="31"
+					                 Min="1"
+					                 Variant="Variant.Outlined"/>
+				</MudItem>
+				<MudSpacer/>
+				<MudItem xs="2" Class="d-flex justify-center">
+					<MudIconButton Icon="@Icons.Material.Filled.Check"
+					               Color="@Color.Success"/>
+					<MudIconButton Icon="@Icons.Material.Filled.Delete"
+					               OnClick="@(() => ViewModel.RemoveItemCommand.Execute(monthlyExpense))"
+					               Color="@Color.Error"/>
+				</MudItem>
+
+			</MudGrid>
+		}
+		<MudPaper Class="my-12 pa-4 d-flex justify-center" Elevation="0">
+			<MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
+			               Color="@Color.Success"
+			               OnClick="@(() => ViewModel.AddItemCommand.Execute(null))"
+			               Size="@Size.Large"/>
+		</MudPaper>
+	}
+</MudContainer>
