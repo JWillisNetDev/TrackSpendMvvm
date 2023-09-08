@@ -30,6 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\TrackSpendMvvm.Data\TrackSpendMvvm.Data.csproj" />
     <ProjectReference Include="..\TrackSpendMvvm\TrackSpendMvvm.csproj" />
   </ItemGroup>
 

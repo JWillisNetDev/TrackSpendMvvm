@@ -8,7 +8,11 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices();
 
-builder.Services.AddTrackSpendService(builder.Configuration);
+builder.Services.AddDbContext<TrackSpendDbContext>(options =>
+{
+	options.UseSqlServer(builder.Configuration.GetConnectionString("default"));
+});
+builder.Services.AddTrackSpendService();
 builder.Services.AddViewModels();
 
 var app = builder.Build();
@@ -21,8 +25,7 @@ if (!app.Environment.IsDevelopment())
  
 using (var scope = app.Services.CreateScope()) // Apply migrations
 {
-	await using var db = await scope.ServiceProvider.GetRequiredService<IDbContextFactory<TrackSpendDbContext>>()
-		.CreateDbContextAsync(); // Service added by AddTrackSpendService
+	await using var db = scope.ServiceProvider.GetRequiredService<TrackSpendDbContext>(); // Service added by AddTrackSpendService
 	await db.Database.MigrateAsync();
 }
 

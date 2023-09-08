@@ -1,7 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.AspNetCore.Components;
 using TrackSpendMvvm.Data.Models;
 using TrackSpendMvvm.Services;
 
@@ -21,7 +20,6 @@ public partial class MonthlyExpenseListViewModel : BaseViewModel
 
 	public override async Task OnInitializedAsync()
 	{
-		await Task.Delay(TimeSpan.FromSeconds(3));
 		Items = new ObservableCollection<MonthlyExpense>();
 		foreach (var item in await _trackSpendService.GetAllMonthlyExpensesAsync())
 		{
@@ -33,12 +31,22 @@ public partial class MonthlyExpenseListViewModel : BaseViewModel
 	[RelayCommand]
 	private void AddItem()
 	{
+		if (Items is null)
+		{
+			return;
+		}
+
 		Items.Add(new MonthlyExpense());
 	}
 
 	[RelayCommand]
 	private void RemoveItem(MonthlyExpense item)
 	{
+		if (Items is null)
+		{
+			return;
+		}
+
 		Items.Remove(item);
 	}
 }

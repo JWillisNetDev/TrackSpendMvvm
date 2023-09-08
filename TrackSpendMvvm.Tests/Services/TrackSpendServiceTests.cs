@@ -1,6 +1,5 @@
-﻿using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
-using TrackSpendMvvm.Data;
+﻿using Moq;
+using TrackSpendMvvm.Data.Interfaces;
 using TrackSpendMvvm.Data.Models;
 using TrackSpendMvvm.Services;
 using TrackSpendMvvm.Tests.Extensions;
@@ -9,22 +8,10 @@ namespace TrackSpendMvvm.Tests.Services;
 
 public class TrackSpendServiceTests
 {
-	private readonly AutoMocker _mocker;
-
-	public TrackSpendServiceTests()
-	{
-		_mocker = new AutoMocker().WithInMemoryDatabase();
-		using var db = _mocker.Get<IDbContextFactory<TrackSpendDbContext>>().CreateDbContext();
-		db.Database.EnsureCreated();
-		db.SaveChanges();
-	}
-
 	[Fact]
 	public async Task AddMonthlyExpense_AddsMonthlyExpense()
 	{
 		// Arrange
-		var sut = _mocker.CreateInstance<TrackSpendService>();
-
 		var expense = new MonthlyExpense
 		{
 			Title = "Test title",
@@ -33,28 +20,28 @@ public class TrackSpendServiceTests
 			DayOfMonth = 10,
 		};
 
+		var mocker = new AutoMocker().WithMonthlyExpenseProvider(out var dataSource);
+
+		var sut = mocker.CreateInstance<TrackSpendService>();
+
 		// Act
 		await sut.AddMonthlyExpenseAsync(expense);
 
 		// Asserts
-		await using var db = await _mocker.Get<IDbContextFactory<TrackSpendDbContext>>().CreateDbContextAsync();
-		var actual = Assert.Single(db.MonthlyExpenses);
-		Assert.False(string.IsNullOrWhiteSpace(actual.Id));
+		mocker.Verify<IDataProvider>(x => x.SaveChangesAsync(), times: Times.Once);
+		var actual = Assert.Single(dataSource);
+		Assert.Equal(expense.Id, actual.Id);
 		Assert.Equal(expense.Title, actual.Title);
 		Assert.Equal(expense.Description, actual.Description);
 		Assert.Equal(expense.Amount, actual.Amount);
 		Assert.Equal(expense.DayOfMonth, actual.DayOfMonth);
-
 	}
 
 	[Fact]
 	public async Task GetAllMonthlyExpenses_GiveNothing_GetsAllMonthlyExpenses()
 	{
 		// Arrange
-		var sut = _mocker.CreateInstance<TrackSpendService>();
-		
-		var db = await _mocker.Get<IDbContextFactory<TrackSpendDbContext>>().CreateDbContextAsync();
-		db.MonthlyExpenses.AddRange(
+		var mocker = new AutoMocker().WithMonthlyExpenseProvider(
 			new MonthlyExpense
 			{
 				Title = "Test 1",
@@ -76,44 +63,45 @@ public class TrackSpendServiceTests
 				Amount = 300.42M,
 				DayOfMonth = 30,
 			});
-		await db.SaveChangesAsync();
+
+		var sut = mocker.CreateInstance<TrackSpendService>();
 
 		// Act
 		var expenses = await sut.GetAllMonthlyExpensesAsync();
 
 		// Assert
-		Assert.Equal(3, expenses.Count);
+		Assert.Equal(3, expenses.Count());
 	}
 
 	[Fact]
 	public async Task GetMonthlyExpense_GivenExistingMonthlyExpenseId_GetsMonthlyExpense()
 	{
 		// Arrange
-		var sut = _mocker.CreateInstance<TrackSpendService>();
-
+		string guid = Guid.NewGuid().ToString();
 		var expense = new MonthlyExpense
 		{
+			Id = guid,
 			Title = "Test title",
 			Description = "Test description",
 			Amount = 42.00M,
 			DayOfMonth = 10,
 		};
 
-		var db = await _mocker.Get<IDbContextFactory<TrackSpendDbContext>>().CreateDbContextAsync();
-		db.MonthlyExpenses.Add(expense);
-		await db.SaveChangesAsync();
+		var mocker = new AutoMocker().WithMonthlyExpenseProvider(expense);
+
+		var sut = mocker.CreateInstance<TrackSpendService>();
 
 		// Act
-		var actual = await sut.GetMonthlyExpenseAsync(expense.Id);
+		var actual = await sut.GetMonthlyExpenseAsync(guid);
 
 		// Assert
-		var expected = Assert.Single(db.MonthlyExpenses);
 		Assert.NotNull(actual);
-		Assert.Equal(expected.Id, actual.Id);
-		Assert.Equal(expected.Title, actual.Title);
-		Assert.Equal(expected.Description, actual.Description);
-		Assert.Equal(expected.Amount, actual.Amount);
-		Assert.Equal(expected.DayOfMonth, actual.DayOfMonth);
+		Assert.False(ReferenceEquals(actual, expense));
+		Assert.Equal(expense.Id, actual.Id);
+		Assert.Equal(expense.Title, actual.Title);
+		Assert.Equal(expense.Description, actual.Description);
+		Assert.Equal(expense.Amount, actual.Amount);
+		Assert.Equal(expense.DayOfMonth, actual.DayOfMonth);
 	}
 
 	[Fact]
@@ -122,8 +110,6 @@ public class TrackSpendServiceTests
 		// Arrange
 		const string expectedTitle = "Updated title";
 
-		var sut = _mocker.CreateInstance<TrackSpendService>();
-
 		var expense = new MonthlyExpense
 		{
 			Title = "Test title",
@@ -132,16 +118,17 @@ public class TrackSpendServiceTests
 			DayOfMonth = 10,
 		};
 
-		var db = await _mocker.Get<IDbContextFactory<TrackSpendDbContext>>().CreateDbContextAsync();
-		db.MonthlyExpenses.Add(expense);
-		await db.SaveChangesAsync();
+		var mocker = new AutoMocker().WithMonthlyExpenseProvider(out var dataSource, expense);
+
+		var sut = mocker.CreateInstance<TrackSpendService>();
 
 		// Act
 		expense.Title = expectedTitle;
 		await sut.UpdateMonthlyExpenseAsync(expense);
 
 		// Assert
-		var actual = Assert.Single(db.MonthlyExpenses);
+		mocker.Verify<IDataProvider>(x => x.SaveChangesAsync(), times: Times.Once);
+		var actual = Assert.Single(dataSource);
 		Assert.Equal(expense.Id, actual.Id);
 		Assert.Equal(expectedTitle, actual.Title);
 		Assert.Equal(expense.Description, actual.Description);
@@ -153,8 +140,6 @@ public class TrackSpendServiceTests
 	public async Task RemoveMonthlyExpense_GivenExistingMonthlyExpenseId_RemovesGivenMonthlyExpense()
 	{
 		// Arrange
-		var sut = _mocker.CreateInstance<TrackSpendService>();
-
 		var expense = new MonthlyExpense
 		{
 			Title = "Test title",
@@ -163,15 +148,16 @@ public class TrackSpendServiceTests
 			DayOfMonth = 10,
 		};
 
-		var db = await _mocker.Get<IDbContextFactory<TrackSpendDbContext>>().CreateDbContextAsync();
-		db.MonthlyExpenses.Add(expense);
-		await db.SaveChangesAsync();
+		var mocker = new AutoMocker().WithMonthlyExpenseProvider(out var dataSource, expense);
+
+		var sut = mocker.CreateInstance<TrackSpendService>();
 
 		// Act
 		var removed = await sut.RemoveMonthlyExpenseAsync(expense.Id);
 
 		// Assert
+		mocker.Verify<IDataProvider>(x => x.SaveChangesAsync(), times: Times.Once);
 		Assert.True(removed);
-		Assert.Empty(db.MonthlyExpenses);
+		Assert.Empty(dataSource);
 	}
 }
