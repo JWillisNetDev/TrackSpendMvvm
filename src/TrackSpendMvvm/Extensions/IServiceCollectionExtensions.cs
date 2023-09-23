@@ -1,10 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TrackSpendMvvm.Data;
+﻿using TrackSpendMvvm.Data;
 using TrackSpendMvvm.Data.Interfaces;
 using TrackSpendMvvm.Services;
 using TrackSpendMvvm.ViewModels;
 
 namespace TrackSpendMvvm.Extensions;
+
+// ReSharper disable once InconsistentNaming
 
 public static class IServiceCollectionExtensions
 {
@@ -16,7 +17,7 @@ public static class IServiceCollectionExtensions
 
 	public static IServiceCollection AddTrackSpendService(this IServiceCollection collection)
 	{
-		collection.AddScoped<IDataProvider, DataProvider>();
+		collection.AddScoped<IDataProvider, DataSourceProvider>();
 		collection.AddScoped<ITrackSpendService, TrackSpendService>();
 		
 		return collection;
